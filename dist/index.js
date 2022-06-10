@@ -48,6 +48,7 @@ const fs_1 = __importDefault(__nccwpck_require__(7147));
 const form_data_1 = __importDefault(__nccwpck_require__(4334));
 const http_client_1 = __nccwpck_require__(6255);
 const fast_xml_parser_1 = __nccwpck_require__(2603);
+const util = __importStar(__nccwpck_require__(3837));
 class BeekeeperFileUpload {
     constructor(tenant, token, http) {
         this.tenant = tenant;
@@ -58,7 +59,7 @@ class BeekeeperFileUpload {
         return __awaiter(this, void 0, void 0, function* () {
             const uploadTokenUrl = `https://${this.tenant}/api/2/files/attachment_file/upload/token`;
             core.info(`Uploading file ${file}`);
-            const contents = fs_1.default.createReadStream(file);
+            const contents = fs_1.default.readFileSync(file);
             core.info(`Requesting token`);
             const tokenResponse = yield this.http.get(uploadTokenUrl);
             let rc = tokenResponse.message.statusCode;
@@ -68,11 +69,13 @@ class BeekeeperFileUpload {
             }
             const tokenObj = JSON.parse(yield tokenResponse.readBody());
             // Lets build that form
+            core.info(`Uploading file`);
             const form = new form_data_1.default();
             for (const entry of tokenObj['additional_form_data']) {
                 form.append(entry.name, entry.value);
             }
             form.append(tokenObj['file_param_name'], contents);
+            core.info(`form ready`);
             const neutral = new http_client_1.HttpClient();
             const uploadResult = yield neutral.post(tokenObj['upload_url'], form.getBuffer().toString(), form.getHeaders());
             rc = uploadResult.message.statusCode;
@@ -84,27 +87,33 @@ class BeekeeperFileUpload {
             if (tokenObj['upload_response_data_type'] === 'xml') {
                 const parser = new fast_xml_parser_1.XMLParser();
                 const obj = parser.parse(yield uploadResult.readBody());
-                keyVal = obj.key;
+                core.info(`File obj: ${util.inspect(obj)}`);
+                keyVal = obj.PostResponse.Key;
             }
             else {
                 const obj = JSON.parse(yield uploadResult.readBody());
+                core.info(`File obj: ${util.inspect(obj)}`);
                 keyVal = obj.key;
             }
+            core.info(`File key: ${keyVal}`);
             // Now that we have the file uploaded, we need to register it
+            core.info(`Registering file`);
             const registerFileURL = `https://${this.tenant}/api/2/files/attachment_file/upload`;
             const registerResult = yield this.http.post(registerFileURL, JSON.stringify({
                 media_type: 'text/plain',
                 key: keyVal,
-                size: form.getLengthSync()
+                size: form.getLengthSync(),
+                name: file
             }), {
                 'Content-Type': 'application/json'
             });
             rc = registerResult.message.statusCode;
+            const fileMetaObj = JSON.parse(yield registerResult.readBody());
             if (rc < 200 || rc > 299) {
                 core.setFailed('Invalid response code for register');
+                core.error(fileMetaObj);
                 return {};
             }
-            const fileMetaObj = JSON.parse(yield registerResult.readBody());
             core.info(`file upload succeeded, metadata: ${fileMetaObj}`);
             return {
                 usage_type: 'attachment_file',
@@ -169,25 +178,20 @@ function run() {
         try {
             const authHandler = new tokenauth_1.TokenAuthHandler(core.getInput('apikey'));
             const http = new http_client_1.HttpClient('github-beekeeper-chat', [authHandler]);
-            const files = core.getInput('files').split(',');
+            const inputFile = core.getInput('files');
             const fileupload = new fileupload_1.BeekeeperFileUpload(core.getInput('tenant'), core.getInput('apikey'), http);
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const apiFiles = {};
-            if (files.length === 0) {
+            let apiFiles = {};
+            if (inputFile === '') {
                 core.info('No files detected');
             }
             else {
-                for (const file of files) {
-                    if (file === '') {
-                        break;
-                    }
-                    const fileId = yield fileupload.uploadFile(file);
-                    if (fileId !== {}) {
-                        apiFiles['file'] = fileId;
-                    }
-                    else {
-                        return;
-                    }
+                const fileId = yield fileupload.uploadFile(inputFile);
+                if (fileId !== {}) {
+                    apiFiles = fileId;
+                }
+                else {
+                    return;
                 }
             }
             const chatUrl = `https://${core.getInput('tenant')}/api/2/chats/groups/${core.getInput('chat')}/messages`;

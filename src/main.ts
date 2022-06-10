@@ -8,7 +8,7 @@ async function run(): Promise<void> {
     const authHandler = new TokenAuthHandler(core.getInput('apikey'))
     const http = new HttpClient('github-beekeeper-chat', [authHandler])
 
-    const files = core.getInput('files').split(',')
+    const inputFile = core.getInput('files')
     const fileupload = new BeekeeperFileUpload(
       core.getInput('tenant'),
       core.getInput('apikey'),
@@ -16,20 +16,15 @@ async function run(): Promise<void> {
     )
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const apiFiles: any = {}
-    if (files.length === 0) {
+    let apiFiles: any = {}
+    if (inputFile === '') {
       core.info('No files detected')
     } else {
-      for (const file of files) {
-        if (file === '') {
-          break
-        }
-        const fileId = await fileupload.uploadFile(file)
-        if (fileId !== {}) {
-          apiFiles['file'] = fileId
-        } else {
-          return
-        }
+      const fileId = await fileupload.uploadFile(inputFile)
+      if (fileId !== {}) {
+        apiFiles = fileId
+      } else {
+        return
       }
     }
 
