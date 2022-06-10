@@ -1,11 +1,19 @@
-name: 'Your name here'
-description: 'Provide a description here'
-author: 'Your name or organization here'
+name: 'github-beekeeper-chat'
+description: 'Sends a message to Beekeeper ChatsV2'
+author: 'Beekeeper AG'
 inputs:
-  milliseconds: # change this
+  tenant:
     required: true
-    description: 'input description here'
-    default: 'default value if applicable'
+    description: "FQDN of the tenant to send a message to"
+  chat:
+    required: true
+    description: "ID of the chat to send a message to"
+  apikey:
+    required: true
+    description: "API key to use to send a message to the chat"
+  message:
+    required: true
+    description: "Message to send"
 runs:
   using: 'node16'
   main: 'dist/index.js'

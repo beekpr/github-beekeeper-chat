@@ -1,16 +1,22 @@
 import * as core from '@actions/core'
-import {wait} from './wait'
+import {TokenAuthHandler} from './tokenauth'
+import {HttpClient} from '@actions/http-client'
 
 async function run(): Promise<void> {
   try {
-    const ms: string = core.getInput('milliseconds')
-    core.debug(`Waiting ${ms} milliseconds ...`) // debug is only output if you set the secret `ACTIONS_STEP_DEBUG` to true
+    const authHandler = new TokenAuthHandler(core.getInput('apikey'))
+    const http = new HttpClient('github-beekeeper-chat', [authHandler])
 
-    core.debug(new Date().toTimeString())
-    await wait(parseInt(ms, 10))
-    core.debug(new Date().toTimeString())
-
-    core.setOutput('time', new Date().toTimeString())
+    const chatUrl = `https://${core.getInput(
+      'tenant'
+    )}/api/2/chats/groups/${core.getInput('chat')}/messages`
+    core.debug('Sending message...')
+    await http.post(
+      chatUrl,
+      JSON.stringify({
+        body: core.getInput('message')
+      })
+    )
   } catch (error) {
     if (error instanceof Error) core.setFailed(error.message)
   }
