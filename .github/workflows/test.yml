@@ -27,3 +27,4 @@ jobs:
           message: |
             Hello from GitHub CI!
             This should go here: https://testingf.dev.beekeeper.io/chats/bf5ad8d4-b7b5-45d6-9f0e-0f10bc6bbc54
+          files: action.yml
