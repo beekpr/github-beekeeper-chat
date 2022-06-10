@@ -51,7 +51,9 @@ function run() {
             core.debug('Sending message...');
             const result = yield http.post(chatUrl, JSON.stringify({
                 body: core.getInput('message')
-            }));
+            }), {
+                'Content-Type': 'application/json'
+            });
             const body = yield result.readBody();
             core.info(body);
         }

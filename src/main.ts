@@ -15,7 +15,10 @@ async function run(): Promise<void> {
       chatUrl,
       JSON.stringify({
         body: core.getInput('message')
-      })
+      }),
+      {
+        'Content-Type': 'application/json'
+      }
     )
 
     const body = await result.readBody()
