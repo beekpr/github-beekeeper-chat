@@ -11,12 +11,15 @@ async function run(): Promise<void> {
       'tenant'
     )}/api/2/chats/groups/${core.getInput('chat')}/messages`
     core.debug('Sending message...')
-    await http.post(
+    const result = await http.post(
       chatUrl,
       JSON.stringify({
         body: core.getInput('message')
       })
     )
+
+    const body = await result.readBody()
+    core.info(body)
   } catch (error) {
     if (error instanceof Error) core.setFailed(error.message)
   }

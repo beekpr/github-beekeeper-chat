@@ -4,7 +4,8 @@ import * as path from 'path'
 import {expect, test} from '@jest/globals'
 
 test('can submit to stoplight', async () => {
-  process.env['INPUT_TENANT'] = 'stoplight.io/mocks/beekeeper/beekeeper-api/61115872'
+  process.env['INPUT_TENANT'] =
+    'stoplight.io/mocks/beekeeper/beekeeper-api/61115872'
   process.env['INPUT_APIKEY'] = 'foobar'
   process.env['INPUT_CHAT'] = '123'
   process.env['INPUT_MESSAGE'] = 'Testmessage'
@@ -15,4 +16,3 @@ test('can submit to stoplight', async () => {
   }
   console.log(cp.execFileSync(np, [ip], options).toString())
 })
-

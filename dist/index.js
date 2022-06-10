@@ -49,9 +49,11 @@ function run() {
             const http = new http_client_1.HttpClient('github-beekeeper-chat', [authHandler]);
             const chatUrl = `https://${core.getInput('tenant')}/api/2/chats/groups/${core.getInput('chat')}/messages`;
             core.debug('Sending message...');
-            yield http.post(chatUrl, JSON.stringify({
+            const result = yield http.post(chatUrl, JSON.stringify({
                 body: core.getInput('message')
             }));
+            const body = yield result.readBody();
+            core.info(body);
         }
         catch (error) {
             if (error instanceof Error)
