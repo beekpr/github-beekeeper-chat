@@ -75,7 +75,7 @@ class BeekeeperFileUpload {
                 form.append(entry.name, entry.value);
             }
             form.append(tokenObj['file_param_name'], contents);
-            core.info(`form ready`);
+            // One HTTP client without auth - since the form auth is done via embedded signature
             const neutral = new http_client_1.HttpClient();
             const uploadResult = yield neutral.post(tokenObj['upload_url'], form.getBuffer().toString(), form.getHeaders());
             rc = uploadResult.message.statusCode;
@@ -177,29 +177,25 @@ function run() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
             const authHandler = new tokenauth_1.TokenAuthHandler(core.getInput('apikey'));
-            const http = new http_client_1.HttpClient('github-beekeeper-chat', [authHandler]);
             const inputFile = core.getInput('files');
+            const http = new http_client_1.HttpClient('github-beekeeper-chat', [authHandler]);
             const fileupload = new fileupload_1.BeekeeperFileUpload(core.getInput('tenant'), core.getInput('apikey'), http);
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            let apiFiles = {};
+            let file = {};
             if (inputFile === '') {
                 core.info('No files detected');
             }
             else {
-                const fileId = yield fileupload.uploadFile(inputFile);
-                if (fileId !== {}) {
-                    apiFiles = fileId;
-                }
-                else {
+                file = yield fileupload.uploadFile(inputFile);
+                if (file === {}) {
                     return;
                 }
             }
             const chatUrl = `https://${core.getInput('tenant')}/api/2/chats/groups/${core.getInput('chat')}/messages`;
-            core.debug('Sending message...');
             const message = {
                 body: core.getInput('message'),
-                attachment: apiFiles
+                attachment: file
             };
+            core.debug('Sending message...');
             const result = yield http.post(chatUrl, JSON.stringify(message), {
                 'Content-Type': 'application/json'
             });
@@ -207,9 +203,9 @@ function run() {
             const rc = result.message.statusCode;
             if (rc < 200 || rc > 299) {
                 core.setFailed('Invalid response code');
+                const body = yield result.readBody();
+                core.warning(body);
             }
-            const body = yield result.readBody();
-            core.info(body);
         }
         catch (error) {
             if (error instanceof Error)

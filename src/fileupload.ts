@@ -38,9 +38,7 @@ export class BeekeeperFileUpload {
       form.append(entry.name, entry.value)
     }
     form.append(tokenObj['file_param_name'], contents)
-
-    core.info(`form ready`)
-
+    // One HTTP client without auth - since the form auth is done via embedded signature
     const neutral = new HttpClient()
     const uploadResult = await neutral.post(
       tokenObj['upload_url'],
