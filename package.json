@@ -1,6 +1,6 @@
 {
   "name": "github-beekeeper-chat",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "private": true,
   "description": "Action to send a message to chatsv2",
   "main": "lib/main.js",
